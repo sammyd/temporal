@@ -1,37 +1,45 @@
-from influxdb import InfluxDBClient
-from envirophat import light, weather, leds
-import datetime
+#!/usr/bin/env python3
 
+from influxdb import InfluxDBClient, SeriesHelper
+from envirophat import light, weather, leds
+import time
 
 leds.off()
-lux = light.light()
-temp = weather.temperature()
-press = weather.pressure()
-timestamp = datetime.datetime.now().isoformat()
 
+# InfluxDB connections settings
 host = 'temporal.phontok.com'
-post = 8086
+port = 8086
 user = 'tiwanon'
 password = 'root'
 dbname = 'tiwanon'
-json_body = [
-  {
-    "measurement": "environment",
-    "tags": {
-      "location": "lounge",
-      "device": "pi0"
-    },
-    "time": timestamp,
-    "fields": {
-      "temperature": temp,
-      "light": lux,
-      "pressure": press
-    }
-  }
-]
+ssl = True
 
-client = InfluxDBClient(host, port, user, password, dbname)
+influx_client = InfluxDBClient(host, port, user, password, dbname, ssl)
 
-print("Write points: {0}".format(json_body))
-client.write_points(json_body)
+class EnvironmentHelper(SeriesHelper):
+  # Meta class stores time series helper configuration.
+  class Meta:
+    # The client should be an instance of InfluxDBClient.
+    client = influx_client
+    # The series name must be a string. Add dependent fields/tags in curly brackets.
+    series_name = 'environment'
+    # Defines all the fields in this time series.
+    fields = ['temperature', 'light', 'pressure']
+    # Defines all the tags for the series.
+    tags = ['location', 'device']
+    # Defines the number of data points to store prior to writing on the wire.
+    bulk_size = 6
+    # autocommit must be set to True when using bulk_size
+    autocommit = True
+
+try:
+  while True:
+    lux = light.light()
+    temp = weather.temperature()
+    press = weather.pressure()
+    EnvironmentHelper(temperature=temp, light=lux, pressure=press, location='lounge', device='pi0')
+    time.sleep(10)
+
+finally:
+  EnvironmentHelper.commit()
 
