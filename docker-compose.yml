@@ -6,6 +6,8 @@ services:
       - "8086:8086"
     volumes:
       - /opt/data/influxdb:/var/lib/influxdb
+      - ./etc/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf:ro
+    command: influxdb -config /etc/influxdb/influxdb.conf
   grafana:
     image: grafana/grafana:4.4.1
     ports:
