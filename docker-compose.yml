@@ -7,6 +7,7 @@ services:
     volumes:
       - /opt/data/influxdb:/var/lib/influxdb
       - ./etc/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf:ro
+      - ./etc/ssl/influxdb:/etc/ssl/influxdb:ro
     command: influxd -config /etc/influxdb/influxdb.conf
   grafana:
     image: grafana/grafana:4.4.1
